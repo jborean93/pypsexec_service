@@ -27,12 +27,9 @@ UNICODE_STRING init_unicode_string(const std::wstring &wstr, const std::unique_p
         (LPWSTR)0,
     };
 
-    //if (wstr.size() > 0)
-    //{
     uni_string.Buffer = (LPWSTR)(buffer.get() + offset);
     wmemcpy_s(uni_string.Buffer, buffer_size - offset, wstr.c_str(), wstr.size());
-    //}
-    
+
     offset = offset + length;
 
     return uni_string;
