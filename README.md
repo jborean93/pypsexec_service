@@ -16,4 +16,5 @@ This is current a work in progress and is in no where near ready for use.
 * Setup named pipe communication between the service and pypsexec
 * Turn into a Windows service binary
 * Tidy up unused API calls that were added in development
+* Move the external [wil](https://github.com/Microsoft/wil) library into an actual git submodule instead of a copy
 * Probably even more
