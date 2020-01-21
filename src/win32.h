@@ -30,11 +30,17 @@ namespace win32
 
     LUID allocate_locally_unique_id();
 
+    void connect_named_pipe(HANDLE pipe, LPOVERLAPPED overlapped);
+
     std::string convert_sid_to_string_sid(PSID sid);
 
     wil::unique_hlocal convert_string_sid_to_sid(const std::string &string_sid);
 
     win32::unique_environment create_environment_block(HANDLE token, bool inherit);
+
+    wil::unique_hfile create_named_pipe(const std::string &name, uint32_t open_mode, uint32_t pipe_mode,
+        uint32_t max_instances, uint32_t out_size, uint32_t in_size, uint32_t default_timeout,
+        PSECURITY_ATTRIBUTES security_attributes);
 
     wil::unique_process_information create_process(const std::string &application_name,
         const std::string &command_line, PSECURITY_ATTRIBUTES process_attributes,
@@ -127,6 +133,8 @@ namespace win32
     std::string wide_char_to_multi_byte(const std::wstring &wstr);
 
     win32::unique_fs_redirection wow64_disable_wow64_fs_redirection();
+
+    uint32_t write_file(HANDLE file, const PVOID buffer, uint32_t size, LPOVERLAPPED overlapped);
 
     wil::unique_handle wts_query_user_token(uint32_t session_id);
 }

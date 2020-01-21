@@ -57,6 +57,14 @@ namespace win32
         return luid;
     }
 
+    void connect_named_pipe(HANDLE pipe, LPOVERLAPPED overlapped)
+    {
+        if (!::ConnectNamedPipe(pipe, overlapped))
+        {
+            THROW_LAST_ERROR();
+        }
+    }
+
     std::string convert_sid_to_string_sid(PSID sid)
     {
         wil::unique_hlocal_string sid_buffer;
@@ -89,6 +97,22 @@ namespace win32
         }
 
         return environment;
+    }
+
+    wil::unique_hfile create_named_pipe(const std::string &name, uint32_t open_mode, uint32_t pipe_mode,
+        uint32_t max_instances, uint32_t out_size, uint32_t in_size, uint32_t default_timeout,
+        PSECURITY_ATTRIBUTES security_attributes)
+    {
+        std::wstring w_name = multi_byte_to_wide_char(name);
+        wil::unique_hfile h (::CreateNamedPipeW(w_name.c_str(), open_mode, pipe_mode, max_instances, out_size, in_size,
+            default_timeout, security_attributes));
+
+        if (!h)
+        {
+            THROW_LAST_ERROR();
+        }
+
+        return h;
     }
 
     wil::unique_process_information create_process(const std::string &application_name,
@@ -639,6 +663,17 @@ namespace win32
         }
 
         return old_value;
+    }
+
+    uint32_t write_file(HANDLE file, const PVOID buffer, uint32_t size, LPOVERLAPPED overlapped)
+    {
+        uint32_t num_written;
+        if (!::WriteFile(file, buffer, size, (PDWORD)&num_written, overlapped))
+        {
+            THROW_LAST_ERROR();
+        }
+
+        return num_written;
     }
 
     wil::unique_handle wts_query_user_token(uint32_t session_id)

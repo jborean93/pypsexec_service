@@ -1,40 +1,42 @@
+#ifndef MESSAGE_H
+#define MESSAGE_H
 #include <string>
-#include <memory>
 #include <tuple>
 #include <vector>
 #include <stdint.h>
 
 enum message_type {error_msg, process_start_msg, process_info_msg, process_end_msg};
 
-void copy_to_buffer(std::byte *buffer, uint32_t *offset, uint32_t buffer_size, void *data, uint32_t data_size)
+void copy_to_buffer(std::vector<std::byte> &buffer, uint32_t *offset, const void *data, uint32_t size)
 {
-    memcpy_s(buffer + *offset, buffer_size - *offset, data, data_size);
-    *offset += data_size;
+    memcpy_s(&buffer[*offset], buffer.capacity() - *offset, data, size);
+    *offset += size;
 }
 
-void copy_uint32_to_buffer(std::byte *buffer, uint32_t *offset, uint32_t buffer_size, uint32_t data)
+void copy_uint32_to_buffer(std::vector<std::byte> &buffer, uint32_t *offset, uint32_t data)
 {
-    copy_to_buffer(buffer, offset, buffer_size, &data, sizeof(data));
+    copy_to_buffer(buffer, offset, &data, sizeof(data));
 }
 
-void copy_string_to_buffer(std::byte *buffer, uint32_t *offset, uint32_t buffer_size, std::string &data)
+void copy_string_to_buffer(std::vector<std::byte> &buffer, uint32_t *offset, const std::string &data)
 {
     uint32_t size = data.size();
-    copy_uint32_to_buffer(buffer, offset, buffer_size, size);
-    copy_to_buffer(buffer, offset, buffer_size, &data, size);  // TODO: this isn't right
+    copy_uint32_to_buffer(buffer, offset, size);
+    copy_to_buffer(buffer, offset, &data[0], size);
 }
 
-std::tuple<std::unique_ptr<std::byte[]>, uint32_t, uint32_t> create_buffer(message_type type, uint32_t buffer_size)
+std::tuple<std::vector<std::byte>, uint32_t> create_buffer(message_type type, uint32_t buffer_size)
 {
-    uint32_t total_size = sizeof(type) + sizeof(uint32_t) + buffer_size;
+    uint32_t total_size = sizeof(uint32_t) + sizeof(type) + sizeof(uint32_t) + buffer_size;
 
+    std::vector<std::byte> buffer (total_size);
     uint32_t offset = 0;
-    auto buffer = std::make_unique<std::byte[]> (total_size);
 
-    copy_uint32_to_buffer(buffer.get(), &offset, total_size, type);
-    copy_uint32_to_buffer(buffer.get(), &offset, total_size, buffer_size);
+    copy_uint32_to_buffer(buffer, &offset, total_size - sizeof(uint32_t));  // TODO: move this encryption method.
+    copy_uint32_to_buffer(buffer, &offset, type);
+    copy_uint32_to_buffer(buffer, &offset, buffer_size);
 
-    return std::make_tuple(std::move(buffer), total_size, offset);
+    return std::make_tuple (buffer, offset);
 }
 
 namespace message
@@ -45,15 +47,17 @@ namespace message
             uint32_t error_code;
             std::string message;
 
-            std::unique_ptr<std::byte[]> serialize()
+            error(uint32_t error_code, const std::string &message) : error_code(error_code), message(message) {}
+
+            std::vector<std::byte> serialize()
             {
-                uint32_t message_size = message.size();
-                auto [buffer, buffer_size, offset] = create_buffer(error_msg, sizeof(error_code) + sizeof(uint32_t) + message_size);
+                uint32_t message_size = sizeof(error_code) + sizeof(uint32_t) + message.size();
+                auto [buffer, offset] = create_buffer(error_msg, message_size);
 
-                copy_uint32_to_buffer(buffer.get(), &offset, buffer_size, error_code);
-                copy_string_to_buffer(buffer.get(), &offset, buffer_size, message);
+                copy_uint32_to_buffer(buffer, &offset, error_code);
+                copy_string_to_buffer(buffer, &offset, message);
 
-                return std::move(buffer);
+                return buffer;
             }
     };
 
@@ -94,3 +98,4 @@ namespace message
             uint32_t return_code;
     };
 }
+#endif // MESSAGE_H

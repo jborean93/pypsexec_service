@@ -57,6 +57,7 @@
         "unordered_map": "cpp",
         "xhash": "cpp",
         "xtree": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "fstream": "cpp"
     }
 }
